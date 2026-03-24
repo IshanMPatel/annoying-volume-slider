@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V0LUM3 C0NTR0L</title>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="start-screen">
+        <button id="start-btn">CLICK HERE TO FIX AUDIO DRIVERS</button>
+    </div>
+
+    <h2>Adjust Volume Plz</h2>
+    
+    <div class="slider-container" id="track">
+        <div class="slider-thumb" id="thumb"></div>
+    </div>
+    
+    <div class="volume-display">CURRENT VOL: <span id="vol-text">0.00000</span>%</div>
+
+    <script>
+        const thumb = document.getElementById('thumb');
+        const track = document.getElementById('track');
+        const volText = document.getElementById('vol-text');
+        const startBtn = document.getElementById('start-btn');
+        const startScreen = document.getElementById('start-screen');
+
+        let isDragging = false;
+        const maxLeft = 375;
+        let audioCtx, oscillator, gainNode;
+
+        startBtn.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            oscillator.type = 'sawtooth'; 
+            oscillator.frequency.value = 440; 
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.value = 0;
+            oscillator.start();
+        });
+
+        thumb.addEventListener('mouseenter', () => {
+            if (!isDragging) {
+                const randomPos = Math.floor(Math.random() * maxLeft);
+                thumb.style.left = randomPos + 'px';
+                updateVolume(randomPos);
+            }
+        });
+
+        thumb.addEventListener('mousedown', () => {
+            isDragging = true;
+            thumb.style.background = 'orange'; 
+            thumb.style.transition = 'none';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                thumb.style.background = '#00ff00';
+                thumb.style.transition = 'left 0.1s ease-out';
+                thumb.style.left = '0px'; 
+                updateVolume(0);
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const trackRect = track.getBoundingClientRect();
+                let newLeft = (e.clientX - trackRect.left) * 0.15; 
+                if (newLeft < 0) newLeft = 0;
+                if (newLeft > maxLeft) newLeft = maxLeft;
+
+                thumb.style.left = newLeft + 'px';
+                updateVolume(newLeft);
+            }
+        });
+
+        function updateVolume(pxPos) {
+            let vol = (pxPos / maxLeft) * 100;
+            volText.innerText = vol.toFixed(5); 
+            
+            if (gainNode) {
+                gainNode.gain.value = (vol / 100) * 0.5; // Volume cap at 50% because im nice
+                oscillator.frequency.value = 440 + (vol * 5); // Increasing pitch as volume increases
+            }
+        }
+    </script>
+</body>
+</html>
